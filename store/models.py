@@ -97,6 +97,7 @@ class CartItem(models.Model):
         unique_together = [['cart', 'product']]
 
 
+
 class Address(models.Model):
     customer = models.OneToOneField(Customer, on_delete=models.CASCADE, primary_key=True)
     street = models.CharField(max_length=255)

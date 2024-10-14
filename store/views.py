@@ -1,13 +1,16 @@
 from django.db.models import Count
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.generics import CreateAPIView
+from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin, DestroyModelMixin
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.filters import SearchFilter, OrderingFilter
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from .filters import ProductFilter
-from .models import Product, Collection, OrderItem, Review
+from .models import Product, Collection, OrderItem, Review, Cart, CartItem
 from .pagination import DefaultPagination
-from .serializers import ProductSerializer, CollectionSerializer, ReviewSerializer
+from .serializers import ProductSerializer, CollectionSerializer, ReviewSerializer, CartSerializer, CartItemSerializer, \
+    AddCartItemSerializer
 
 
 class ProductViewSet(ModelViewSet):
@@ -53,6 +56,39 @@ class ReviewViewSet(ModelViewSet):
     def get_serializer_context(self):
         print(self.kwargs['product_pk'])
         return {'product_id': self.kwargs['product_pk']}
+
+
+# CreateAPIView -> createModelMixin
+class CartViewSet(CreateAPIView, RetrieveModelMixin, DestroyModelMixin, GenericViewSet):
+    queryset = Cart.objects.prefetch_related('items__product').all()
+    serializer_class = CartSerializer
+
+
+class CartItemViewSet(ModelViewSet):
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return AddCartItemSerializer
+        return CartItemSerializer
+
+    def get_serializer_context(self):
+        return {'cart_id':self.kwargs['cart_pk']}
+
+    def get_queryset(self):
+        return CartItem.objects.filter(cart_id=self.kwargs['cart_pk']).select_related('product')
+    # def get_serializer_class(self):
+    #     if self.request.method == 'POST':
+    #         return AddCartItemSerializer
+    #     return CartItemSerializer
+    #
+    # def get_serializer_context(self):
+    #     return {'cart_id': self.kwargs['cart_pk']}
+    #
+    # def get_queryset(self):
+    #     return CartItem.objects \
+    #         .filter(cart_id=self.kwargs['cart_pk']) \
+    #         .select_related('product')
+
 
 # class CollectionList(ListCreateAPIView):
 #     queryset = Collection.objects.annotate(product_count=Count('product'))
