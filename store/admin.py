@@ -71,8 +71,9 @@ class ProductAdmin(admin.ModelAdmin):
 class CustomerAdmin(admin.ModelAdmin):
     list_display = ['first_name', 'last_name', 'membership', 'number_orders']
     list_editable = ['membership']
+    list_select_related = ['user']
     list_per_page = 20
-    search_fields = ['first_name__istartswith', 'last_name__istartswith']
+    search_fields = ['user__first_name__istartswith', 'user__last_name__istartswith']
 
     @admin.display(ordering='number_orders')
     def number_orders(self, customer):
@@ -82,11 +83,18 @@ class CustomerAdmin(admin.ModelAdmin):
 
         return format_html('<a href= "{}">{}</a>', url, customer.number_orders)
 
+    @admin.display(ordering='user__first_name')
+    def first_name(self,customer):
+        return customer.first_name()
+
+    @admin.display(ordering='user__last_name')
+    def last_name(self,customer):
+        return customer.last_name()
+
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(
             number_orders=Count('order')
         )
-
 
 class OrderItemInline(admin.TabularInline):
     model = models.OrderItem
