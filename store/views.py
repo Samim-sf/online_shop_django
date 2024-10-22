@@ -1,16 +1,16 @@
 from django.db.models import Count
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.generics import CreateAPIView
-from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin, DestroyModelMixin
+from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, UpdateModelMixin
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from .filters import ProductFilter
-from .models import Product, Collection, OrderItem, Review, Cart, CartItem
+from .models import Product, Collection, OrderItem, Review, Cart, CartItem, Customer
 from .pagination import DefaultPagination
 from .serializers import ProductSerializer, CollectionSerializer, ReviewSerializer, CartSerializer, CartItemSerializer, \
-    AddCartItemSerializer, UpdateCartItemSerializer
+    AddCartItemSerializer, UpdateCartItemSerializer, CustomerSerializer
 
 
 class ProductViewSet(ModelViewSet):
@@ -65,7 +65,8 @@ class CartViewSet(CreateAPIView, RetrieveModelMixin, DestroyModelMixin, GenericV
 
 
 class CartItemViewSet(ModelViewSet):
-    http_method_names = ['get', 'post', 'patch', 'delete'] # these names should be in small letters
+    http_method_names = ['get', 'post', 'patch', 'delete']  # these names should be in small letters
+
     def get_serializer_class(self):
         if self.request.method == 'POST':
             return AddCartItemSerializer
@@ -74,10 +75,16 @@ class CartItemViewSet(ModelViewSet):
         return CartItemSerializer
 
     def get_serializer_context(self):
-        return {'cart_id':self.kwargs['cart_pk']}
+        return {'cart_id': self.kwargs['cart_pk']}
 
     def get_queryset(self):
         return CartItem.objects.filter(cart_id=self.kwargs['cart_pk']).select_related('product')
+
+
+class CustomerViewSet(CreateModelMixin, RetrieveModelMixin, UpdateModelMixin, GenericViewSet):
+    queryset = Customer.objects.all()
+    serializer_class = CustomerSerializer
+
     # def get_serializer_class(self):
     #     if self.request.method == 'POST':
     #         return AddCartItemSerializer
@@ -90,7 +97,6 @@ class CartItemViewSet(ModelViewSet):
     #     return CartItem.objects \
     #         .filter(cart_id=self.kwargs['cart_pk']) \
     #         .select_related('product')
-
 
 # class CollectionList(ListCreateAPIView):
 #     queryset = Collection.objects.annotate(product_count=Count('product'))
@@ -106,6 +112,7 @@ class CartItemViewSet(ModelViewSet):
 #         serializer = CollectionSerializer(collections, many=True, context={'request': request})
 #         return Response(serializer.data, status=status.HTTP_200_OK)
 #     elif request.method == 'POST':
+
 #         serializer = CollectionSerializer(data=request.data)
 #         serializer.is_valid(raise_exception=True)
 #         serializer.save()
